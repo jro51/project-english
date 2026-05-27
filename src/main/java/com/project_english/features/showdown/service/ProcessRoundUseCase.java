@@ -76,7 +76,7 @@ public class ProcessRoundUseCase {
         // 7. Generar el contraataque de la IA si el jugador sigue vivo
         String nextAiQuestion = isMatchEnded
                 ? "Match Ended"
-                : aiClient.generateNextQuestion(systemInstruction, request.brawlerName());
+                : aiClient.generateNextQuestion(promptBuilder.buildQuestionInstruction(request.brawlerName()), request.brawlerName());
 
         // 8. Retornar el DTO inmutable con los resultados procesados en el servidor
         return new RoundResponse(hp, powerCubes, brawlersRemaining, damageReason, isMatchEnded, isVictory, nextAiQuestion);
