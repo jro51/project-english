@@ -8,27 +8,35 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private final JwtAuthFilter jwtAuthFilter;
+
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Deshabilitamos CSRF porque usaremos JWT
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Arquitectura REST sin estado
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // Endpoints de login/registro libres de token
-                        .anyRequest().permitAll() // Dejamos pasar el resto de momento para probar Flutter sin trabas. Luego activaremos el filtro estricto.
-                );
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .anyRequest().authenticated()           // ✅ Ahora sí protege todo lo demás
+                )
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // Define BCrypt como el algoritmo oficial para encriptar las contraseñas.
         return new BCryptPasswordEncoder();
     }
 }
