@@ -1,5 +1,7 @@
 package com.project_english.features.showdown.service;
 
+import com.project_english.features.showdown.domain.model.Brawler;
+import com.project_english.features.showdown.domain.repository.BrawlerRepository;
 import com.project_english.features.showdown.infrastructure.client.AiClient;
 import com.project_english.features.showdown.presentation.dto.PlayRoundRequest;
 import com.project_english.features.showdown.presentation.dto.RoundResponse;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProcessRoundUseCase {
 
     private final UserRepository userRepository;
+    private final BrawlerRepository brawlerRepository;
     private final AiClient aiClient;
     private final DynamicPromptBuilder promptBuilder;
     private final RoundEvaluationService evaluationService;
@@ -20,11 +23,13 @@ public class ProcessRoundUseCase {
 
     public ProcessRoundUseCase(
             UserRepository userRepository,
+            BrawlerRepository brawlerRepository,
             AiClient aiClient,
             DynamicPromptBuilder promptBuilder,
             RoundEvaluationService evaluationService,
             TrophyService trophyService) {
         this.userRepository    = userRepository;
+        this.brawlerRepository = brawlerRepository;
         this.aiClient          = aiClient;
         this.promptBuilder     = promptBuilder;
         this.evaluationService = evaluationService;
@@ -40,13 +45,22 @@ public class ProcessRoundUseCase {
                         "USER_NOT_FOUND",
                         "El jugador con ID " + request.userId() + " no existe."));
 
-        // 2. Evaluar respuesta con IA
-        String systemInstruction = promptBuilder.buildSystemInstruction(request.brawlerName());
+        // 2. Obtener brawler real desde BD para usar su personalidad
+        Brawler brawler = brawlerRepository.findById(
+                        request.brawlerName().toLowerCase())
+                .orElseThrow(() -> new BusinessException(
+                        "BRAWLER_NOT_FOUND",
+                        "El brawler '" + request.brawlerName() + "' no existe."));
+
+        // 3. Evaluar respuesta con IA usando la personalidad real
+        String systemInstruction = promptBuilder.buildSystemInstruction(
+                brawler.getName(), brawler.getSystemInstruction());
         int score = aiClient.evaluateAnswer(systemInstruction, request.userAnswer());
 
-        // 3. Calcular resultado de la ronda
+        // 4. Calcular resultado de la ronda
         RoundEvaluationService.EvaluationResult result =
-                evaluationService.evaluate(request.currentHp(), request.currentPowerCubes(), score);
+                evaluationService.evaluate(
+                        request.currentHp(), request.currentPowerCubes(), score);
 
         int round             = request.currentRound() + 1;
         int hp                = result.newHp();
@@ -55,12 +69,11 @@ public class ProcessRoundUseCase {
         boolean isMatchEnded  = false;
         boolean isVictory     = false;
 
-        // 4. Verificar condiciones de fin de partida
+        // 5. Verificar condiciones de fin de partida
         if (evaluationService.isDead(hp)) {
             hp           = 0;
             isMatchEnded = true;
             trophyService.applyDefeat(user);
-
         } else if (evaluationService.isMatchWon(round)) {
             brawlersRemaining = 1;
             isMatchEnded      = true;
@@ -68,12 +81,16 @@ public class ProcessRoundUseCase {
             trophyService.applyVictory(user);
         }
 
-        // 5. Generar siguiente pregunta de la IA
+        // 6. Generar siguiente pregunta usando la personalidad real
         String nextQuestion = isMatchEnded
                 ? "Match Ended"
                 : aiClient.generateNextQuestion(
-                promptBuilder.buildQuestionInstruction(request.brawlerName()),
-                request.brawlerName());
+                promptBuilder.buildQuestionInstruction(
+                        brawler.getName(),
+                        brawler.getSystemInstruction(),
+                        request.currentRound() // <-- Agregamos el parámetro aquí
+                ),
+                brawler.getName());
 
         return new RoundResponse(
                 hp, powerCubes, brawlersRemaining,

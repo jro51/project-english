@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "${app.allowed-origins}")
 public class AuthController {
 
     private final RegisterUseCase registerUseCase;

@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/showdown")
 // @CrossOrigin permite que dispositivos externos (como Flutter) consuman los endpoints
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "${app.allowed-origins}")
 public class ShowdownController {
 
     private final ProcessRoundUseCase processRoundUseCase;

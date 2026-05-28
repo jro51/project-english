@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project_english.features.showdown.infrastructure.client.dto.GeminiRequest;
 import com.project_english.features.showdown.infrastructure.client.dto.GeminiResponse;
 import com.project_english.shared.exception.BusinessException;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,12 @@ public class GeminiAiClient implements AiClient {
 
     @Value("${gemini.api.key}")
     private String apiKey;
+
+    @PostConstruct
+    public void init() {
+        // Esto imprimirá los primeros caracteres en tu consola de Spring Boot para comprobar que cambió
+        System.out.println("🚀 Clave cargada en el sistema: " + apiKey.substring(0, 7) + "...");
+    }
 
     public GeminiAiClient(RestClient.Builder restClientBuilder, ObjectMapper objectMapper) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();

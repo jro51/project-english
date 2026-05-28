@@ -7,8 +7,6 @@ import jakarta.persistence.*;
 public class Brawler {
 
     @Id
-    // El ID será un String asignado manualmente (ej: "colt", "shelly")
-    // Facilita enormemente el mapeo y la consistencia con los archivos assets que ya tienes definidos en Flutter.
     private String id;
 
     @Column(nullable = false, length = 50)
@@ -18,10 +16,14 @@ public class Brawler {
     private String avatarAsset;
 
     @Column(name = "primary_color", nullable = false, length = 7)
-    private String primaryColor; // Almacenará el Hexadecimal, ej: "#FF5733"
+    private String primaryColor;
 
     @Column(name = "required_trophies", nullable = false)
     private int requiredTrophies = 0;
+
+    // ✅ Campo nuevo — personalidad del brawler para los prompts de IA
+    @Column(name = "system_instruction", nullable = false, columnDefinition = "TEXT")
+    private String systemInstruction;
 
     public Brawler() {}
 
@@ -39,4 +41,9 @@ public class Brawler {
 
     public int getRequiredTrophies() { return requiredTrophies; }
     public void setRequiredTrophies(int requiredTrophies) { this.requiredTrophies = requiredTrophies; }
+
+    public String getSystemInstruction() { return systemInstruction; }
+    public void setSystemInstruction(String systemInstruction) {
+        this.systemInstruction = systemInstruction;
+    }
 }

@@ -24,3 +24,6 @@ gemini:
 
 jwt:
   secret: ${JWT_SECRET}
+
+app:
+  allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}
